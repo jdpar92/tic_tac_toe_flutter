@@ -28,7 +28,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
   int currentPlayer = 1;
   int winnerId = 0;
-  int numOfPossibleMoves = 8;
+  int numOfPossibleMoves = 9;
   List<int> board = generateCleanBoard();
   final Random random = new Random();
 
@@ -37,19 +37,12 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
   // 6 7 8
   static const List<List<int>> possibleWinningMoves = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
 
-  bool gameIsOver(board) {
-
-    if(getWinner(board) != 0) return true;
-
-    for(int i = 0; i < board.length; i++) {
-      if(board[i] == 0) return false;
-    }
-
-    return false;
-  }
-
   // This will return 0 if there is no winner otherwise it will return the player that won
   int getWinner(board) {
+
+    if(numOfPossibleMoves == 0) {
+      return 0;
+    }
 
     for(var movesToCheck in possibleWinningMoves) {
 
@@ -78,21 +71,25 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
     }
 
     // If the middle move does not match any of the surrounding squares then we don't have a winner
-    return 0;
+    return -1;
 
   }
 
   void handlePressed(newMove) {
 
-    if(gameIsOver(board)) {
+    if(getWinner(board) > -1) {
       return;
     }
 
     // Update the board
     updateBoard(newMove);
 
+    setState(() {
+      numOfPossibleMoves -= 1;
+    });
+
     // Update game state
-    if(gameIsOver(board)) {
+    if(getWinner(board) > -1) {
       setState(() {
         winnerId = getWinner(board);
       });
@@ -102,10 +99,6 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
         makeMove();
       }
     };
-
-    setState(() {
-      numOfPossibleMoves -= 1;
-    });
 
   }
 
@@ -134,17 +127,48 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
   // Random
   void makeEasyMove() {
-    int move = random.nextInt(8);
-    if(board[move] == 0) {
-      this.handlePressed(move);
-    } else {
-      makeEasyMove();
+
+    double bestScore = -INFINITY;
+    int bestMove = 0;
+    int numOfMoves = numOfPossibleMoves;
+
+    for(int i = 0; i < board.length; i++) {
+
+      // If the square is open
+      if(board[i] == 0) {
+
+        // Make a move in that square
+        board[i] = 2;
+        numOfMoves -= 1;
+
+        // Get a score for this move
+        double miniMaxScore = getMiniMaxScore(board, 0, true, numOfMoves);
+
+        // Set the best score if the score for this move is higher than the score for the last move
+        if(bestScore < miniMaxScore) {
+          bestScore = miniMaxScore;
+          bestMove = i;
+        }
+
+        // Reset the move
+        board[i] = 0;
+        numOfMoves += 1;
+
+      }
     }
+
+    this.handlePressed(bestMove);
+
   }
 
   // Mixed?
   void makeMediumMove() {
-
+    int move = random.nextInt(8);
+    if(board[move] == 0) {
+      this.handlePressed(move);
+    } else {
+      makeMediumMove();
+    }
   }
 
   // Best Move - Minimax algorithm
@@ -152,49 +176,58 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
     double bestScore = -INFINITY;
     int bestMove = 0;
+    int numOfMoves = numOfPossibleMoves;
 
     for(int i = 0; i < board.length; i++) {
 
+      // If the square is open
       if(board[i] == 0) {
 
+        // Make a move in that square
         board[i] = 2;
+        numOfMoves -= 1;
 
-//        print('makehardmove');
-//        print(i);
-//        print(board);
+        // Get a score for this move
+        double miniMaxScore = getMiniMaxScore(board, 0, false, numOfMoves);
 
-        double miniMaxScore = getMiniMaxScore(board, 0, false);
-
-        print('minimaxscore');
-        print(miniMaxScore);
-
+        // Set the best score if the score for this move is higher than the score for the last move
         if(bestScore < miniMaxScore) {
           bestScore = miniMaxScore;
           bestMove = i;
-          print('best move');
-          print(bestMove);
-          
         }
 
+        // Reset the move
         board[i] = 0;
+        numOfMoves += 1;
+
       }
     }
 
-    if(bestMove != 0) this.handlePressed(bestMove);
+    this.handlePressed(bestMove);
 
   }
 
-  double getMiniMaxScore(board, nodeDepth, isMaxMove) {
+  double getMiniMaxScore(board, nodeDepth, isMaxMove, numOfMoves) {
 
-    if(getWinner(board) == 1) {
+    int winner = getWinner(board);
+
+    if(winner == 2) {
 //      return 10 - nodeDepth;
-      return 10;
+      return 10.0 - nodeDepth - numOfMoves;
     }
 
-    if(getWinner(board) == 2) {
+    if(winner == 1) {
 //      return -10 + nodeDepth;
-      return -10;
+      return -10.0 - nodeDepth - numOfMoves;
     }
+
+    // Draw
+    if(numOfMoves == 0) {
+      return 0;
+    }
+
+
+
 
     double bestScore = isMaxMove ? -INFINITY : INFINITY;
 
@@ -203,28 +236,25 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
       if(board[i] == 0) {
 
         board[i] = isMaxMove ? 2 : 1;
+        numOfMoves -= 1;
 
-//        print('minimax');
-//        print(i);
-//        print(board);
-//        print('nodeDepth');
-//        print(nodeDepth);
-
-        double miniMaxScore = getMiniMaxScore(board, nodeDepth + 1, !isMaxMove);
-//        print('minimaxscore');
-//        print(miniMaxScore);
+        double miniMaxScore = getMiniMaxScore(board, nodeDepth + 1, !isMaxMove, numOfMoves);
 
         if(isMaxMove) {
+          // Return maximum score
           if(bestScore < miniMaxScore) {
             bestScore = miniMaxScore;
           }
         } else {
+          // Return minimal score
           if(bestScore > miniMaxScore) {
             bestScore = miniMaxScore;
           }
         }
 
+        // Undo move
         board[i] = 0;
+        numOfMoves += 1;
 
       }
 
@@ -240,7 +270,8 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
     setState(() {
       board = generateCleanBoard();
       winnerId = 0;
-      numOfPossibleMoves = 8;
+      numOfPossibleMoves = 9;
+      currentPlayer = 1;
     });
   }
 
@@ -270,7 +301,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              if(gameIsOver(board)) Container(
+              if(getWinner(board) > -1) Container(
                 child: winnerId == 0 ? Text('Draw!') : Text('Winner $winnerId'),
               )
             ]
@@ -311,7 +342,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
                 Expanded( child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    if(gameIsOver(board)) FlatButton(
+                    if(getWinner(board) > -1) FlatButton(
                       color: Colors.white,
                       onPressed: this.resetGame,
                       child: Text('Play Again'),
