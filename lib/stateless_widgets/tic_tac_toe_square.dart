@@ -20,11 +20,11 @@ class TicTacToeSquare extends StatelessWidget {
         Expanded(
           child: RawMaterialButton(
             constraints: BoxConstraints.expand(),
-            fillColor: Colors.white,
+            fillColor: Color(0xff2EC4B6),
             child: child,
             onPressed: onPressed,
             shape: Border.all(
-              color: Colors.black,
+              color: Color(0xff011627),
               width: 8.0,
             )
           )

@@ -1,15 +1,17 @@
 
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:tic_tac_toe/stateful_widgets/tic_tac_toe_board.dart';
 
 class MenuButton extends StatelessWidget {
 
-  const MenuButton({this.title, this.numOfPlayers});
+  const MenuButton({
+    Key key, this.title,
+    this.numOfPlayers,
+    this.onPressed
+  }) : super(key: key);
 
   final String title;
   final int numOfPlayers;
+  final Function onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -21,13 +23,7 @@ class MenuButton extends StatelessWidget {
             color: Colors.blue,
             textColor: Colors.white,
             child: Text(title),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute<void>(
-                  builder: (BuildContext context) {
-                    return TicTacToeBoard(numOfPlayers: numOfPlayers);
-                  }
-              ));
-            },
+            onPressed: onPressed,
           )
         )
       ]

@@ -47,7 +47,25 @@ class MyApp extends StatelessWidget {
           // or simply save your changes to "hot reload" in a Flutter IDE).
           // Notice that the counter didn't reset back to zero; the application
           // is not restarted.
-          primarySwatch: Colors.blue,
+          primaryColor: Color(0xffE71D36),
+          accentColor: Colors.green,
+          buttonTheme: ButtonThemeData(
+            colorScheme: ColorScheme.light(
+              primary: Colors.red,
+              primaryVariant: Colors.blue,
+              secondary: Colors.green,
+              secondaryVariant: Colors.deepOrange,
+              surface: Colors.black,
+              background: Colors.white,
+              error: Colors.red,
+              onPrimary: Colors.green,
+              onSecondary: Colors.amber,
+              onSurface: Colors.green,
+              onBackground: Colors.white,
+              onError: Colors.red,
+              brightness: Brightness.light
+            )
+          )
         ),
         home: AuthenticationScreen(),
       )

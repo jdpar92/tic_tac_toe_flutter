@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:tic_tac_toe/graphql/mutations/auth.mutation.dart';
 import 'package:tic_tac_toe/stateful_widgets/sign_in_form.dart';
-import 'package:tic_tac_toe/stateless_widgets/menu.dart';
+import 'package:tic_tac_toe/stateful_widgets/menu.dart';
 
 class AuthenticationScreen extends StatelessWidget {
 

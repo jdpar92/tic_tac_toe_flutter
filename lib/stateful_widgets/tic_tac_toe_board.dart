@@ -5,17 +5,25 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:tic_tac_toe/constants/settings.dart';
 import 'package:tic_tac_toe/stateless_widgets/tic_tac_toe_square.dart';
-import 'package:tic_tac_toe/stateless_widgets/winner_screen.dart';
 
 class TicTacToeBoard extends StatefulWidget {
 
-  TicTacToeBoard({this.difficultySetting = DifficultySettings.hard, this.numOfPlayers});
+  TicTacToeBoard({ Key key, this.settings }) :
+    difficulty = settings['difficulty'],
+    mode = settings['mode'],
+    numOfPlayers = settings['numOfPlayers'],
+    time = settings['time'],
+    super(key: key);
 
-  final DifficultySettings difficultySetting;
+  final Map settings;
+  final Difficulties difficulty;
+  final Modes mode;
   final int numOfPlayers;
+  final int time;
 
   @override
   TicTacToeBoardState createState() => TicTacToeBoardState();
+
 }
 
 const double INFINITY = 1.0 / 0.0;
@@ -26,23 +34,28 @@ List<int> generateCleanBoard() {
 
 class TicTacToeBoardState extends State<TicTacToeBoard> {
 
+  final Random random = new Random();
+
   int currentPlayer = 1;
   int winnerId = 0;
   int numOfPossibleMoves = 9;
   List<int> board = generateCleanBoard();
-  final Random random = new Random();
 
+  bool gameIsOver(board) {
+
+    if(numOfPossibleMoves == 0) return true;
+    if(getWinner(board) > 0) return true;
+
+    return false;
+
+  }
+
+  // This will return 0 if there is no winner otherwise it will return the player that won
   // 0 1 2
   // 3 4 5
   // 6 7 8
   static const List<List<int>> possibleWinningMoves = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
-
-  // This will return 0 if there is no winner otherwise it will return the player that won
   int getWinner(board) {
-
-    if(numOfPossibleMoves == 0) {
-      return 0;
-    }
 
     for(var movesToCheck in possibleWinningMoves) {
 
@@ -60,24 +73,19 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
       // If the middle is not 0 then we know that a player has taken the square and we can check surrounding squares
       if(middleMove == startMove && middleMove == endMove) {
-//        Navigator.push(context, MaterialPageRoute<void>(
-//            builder: (BuildContext context) {
-//              return WinnerScreen(winnerId: middleMove);
-//            }
-//        ));
         return middleMove;
       }
 
     }
 
     // If the middle move does not match any of the surrounding squares then we don't have a winner
-    return -1;
+    return 0;
 
   }
 
   void handlePressed(newMove) {
 
-    if(getWinner(board) > -1) {
+    if(gameIsOver(board)) {
       return;
     }
 
@@ -89,7 +97,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
     });
 
     // Update game state
-    if(getWinner(board) > -1) {
+    if(gameIsOver(board)) {
       setState(() {
         winnerId = getWinner(board);
       });
@@ -98,25 +106,25 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
       if(widget.numOfPlayers == 1 && currentPlayer == 2) {
         makeMove();
       }
-    };
+    }
 
   }
 
   void makeMove() {
 
-    switch(widget.difficultySetting) {
+    switch(widget.difficulty) {
 
-      case DifficultySettings.easy: {
+      case Difficulties.easy: {
         makeEasyMove();
         break;
       }
 
-      case DifficultySettings.medium: {
+      case Difficulties.medium: {
         makeMediumMove();
         break;
       }
 
-      case DifficultySettings.hard: {
+      case Difficulties.hard: {
         makeHardMove();
         break;
       }
@@ -125,7 +133,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
   }
 
-  // Random
+  // Worst Move
   void makeEasyMove() {
 
     double bestScore = -INFINITY;
@@ -161,7 +169,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
   }
 
-  // Mixed?
+  // Random
   void makeMediumMove() {
     int move = random.nextInt(8);
     if(board[move] == 0) {
@@ -211,13 +219,13 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
     int winner = getWinner(board);
 
+    // Maximizer wins
     if(winner == 2) {
-//      return 10 - nodeDepth;
       return 10.0 - nodeDepth - numOfMoves;
     }
 
+    // Minimizer wins
     if(winner == 1) {
-//      return -10 + nodeDepth;
       return -10.0 - nodeDepth - numOfMoves;
     }
 
@@ -225,9 +233,6 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
     if(numOfMoves == 0) {
       return 0;
     }
-
-
-
 
     double bestScore = isMaxMove ? -INFINITY : INFINITY;
 
@@ -264,8 +269,6 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
   }
 
-
-
   void resetGame() {
     setState(() {
       board = generateCleanBoard();
@@ -292,45 +295,47 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
   Widget build(BuildContext context) {
 
     print(board);
+    bool gameOver = gameIsOver(board);
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Header
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              if(getWinner(board) > -1) Container(
-                child: winnerId == 0 ? Text('Draw!') : Text('Winner $winnerId'),
-              )
-            ]
-          )
-        ),
-
-        // Board
-        Container(
-          height: MediaQuery.of(context).size.width,
-          color: Colors.red,
-          child: Column(
-            children: [0, 3, 6].map((startIndex) {
-
-              return Expanded( child: Row(
+    return Container(
+      color: Colors.green,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Header
+          Expanded(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: board.sublist(startIndex, startIndex + 3).asMap().map((index, move) {
+              children: <Widget>[
+                if(gameOver) Container(
+                  child: winnerId == 0 ? Text('Cat!') : Text('Winner $winnerId'),
+                )
+              ]
+            )
+          ),
 
-                return MapEntry(index, TicTacToeSquare(
-                  child: Text('${move == 0 ? '' : move == 1 ? 'x' : 'o'}'),
-                  onPressed: () => {
-                    if(move == 0) this.handlePressed(startIndex + index)
-                  }
-                ));
+          // Board
+          Container(
+            height: MediaQuery.of(context).size.width,
+            child: Column(
+              children: [0, 3, 6].map((startIndex) {
 
-              }).values.toList(),
+                return Expanded( child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: board.sublist(startIndex, startIndex + 3).asMap().map((index, move) {
 
-            ));
+                  return MapEntry(index, TicTacToeSquare(
+                    child: Text('${move == 0 ? '' : move == 1 ? 'x' : 'o'}'),
+                    onPressed: () => {
+                      if(move == 0) this.handlePressed(startIndex + index)
+                    }
+                  ));
 
-          }).toList(),
+                }).values.toList(),
+
+              ));
+
+            }).toList(),
           )
         ),
 
@@ -339,21 +344,28 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Expanded( child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    if(getWinner(board) > -1) FlatButton(
-                      color: Colors.white,
-                      onPressed: this.resetGame,
-                      child: Text('Play Again'),
-                    ),
-                  ]
-                ))
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      FlatButton(
+                        color: Colors.white,
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Back'),
+                      ),
+                      FlatButton(
+                        color: Colors.white,
+                        onPressed: this.resetGame,
+                        child: Text(gameOver ? 'Play Again' : 'Start Over'),
+                      ),
+                    ]
+                  ),
+
               ]
             )
         ),
       ],
-
+      )
     );
 
   }
