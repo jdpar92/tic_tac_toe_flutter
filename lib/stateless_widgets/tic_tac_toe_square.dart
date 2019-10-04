@@ -21,7 +21,7 @@ class TicTacToeSquare extends StatelessWidget {
   Widget build(BuildContext context) {
 
     final BorderSide borderSide = BorderSide(
-      color: Theme.of(context).accentColor,
+      color: textColor,
       width: 3.0,
     );
 

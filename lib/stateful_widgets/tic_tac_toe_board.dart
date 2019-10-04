@@ -275,6 +275,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
       winnerId = 0;
       numOfPossibleMoves = 9;
       currentPlayer = 1;
+      gameOver = false;
     });
   }
 
@@ -292,6 +293,26 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
       board[index] = move;
     });
     switchPlayer();
+  }
+
+  String getWinnerMessage() {
+
+    if(!gameOver) return '';
+    if(winnerId == 0) return 'Cat’s Scratch!';
+
+    if(widget.numOfPlayers == 1) {
+      if(winnerId == 1) {
+        return('You Win!');
+      } else {
+        return('You Lose!');
+      }
+    } else {
+      if(winnerId == 1) {
+        return('X Wins!');
+      } else {
+        return('O Wins!');
+      }
+    }
   }
 
   @override
@@ -317,7 +338,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
                     Container(
                       child: AnimatedDefaultTextStyle(
                         child: Text(
-                          '${winnerId == 0 ? 'Stale Mate!' : winnerId == 1 ? 'You Win!' : 'You Lose!'}',
+                          getWinnerMessage(),
                           style: TextStyle(color: widget.boardColor)
                         ),
                         curve: Curves.easeInCubic,
