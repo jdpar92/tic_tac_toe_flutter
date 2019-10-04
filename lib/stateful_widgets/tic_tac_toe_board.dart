@@ -4,6 +4,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:tic_tac_toe/constants/settings.dart';
+import 'package:tic_tac_toe/stateless_widgets/button.dart';
+import 'package:tic_tac_toe/stateless_widgets/strike_through.dart';
 import 'package:tic_tac_toe/stateless_widgets/tic_tac_toe_square.dart';
 
 class TicTacToeBoard extends StatefulWidget {
@@ -13,13 +15,15 @@ class TicTacToeBoard extends StatefulWidget {
     mode = settings['mode'],
     numOfPlayers = settings['numOfPlayers'],
     time = settings['time'],
+    boardColor = settings['boardColor'],
     super(key: key);
 
   final Map settings;
   final Difficulties difficulty;
   final Modes mode;
   final int numOfPlayers;
-  final int time;
+  final double time;
+  final Color boardColor;
 
   @override
   TicTacToeBoardState createState() => TicTacToeBoardState();
@@ -40,11 +44,26 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
   int winnerId = 0;
   int numOfPossibleMoves = 9;
   List<int> board = generateCleanBoard();
+  Stopwatch stopwatch1 = Stopwatch()..start();
+  Stopwatch stopwatch2 = Stopwatch();
+  bool gameOver = false;
 
   bool gameIsOver(board) {
 
-    if(numOfPossibleMoves == 0) return true;
-    if(getWinner(board) > 0) return true;
+    if(gameOver) return true;
+
+    int winner = getWinner(board);
+
+    if(numOfPossibleMoves == 0 || winner > 0) {
+
+      setState(() {
+        winnerId = winner;
+        gameOver = true;
+      });
+
+      return true;
+
+    }
 
     return false;
 
@@ -56,6 +75,11 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
   // 6 7 8
   static const List<List<int>> possibleWinningMoves = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
   int getWinner(board) {
+
+    if(widget.mode == Modes.timed) {
+      if(stopwatch1.elapsed.inSeconds >= widget.time) return 2;
+      if(stopwatch2.elapsed.inSeconds >= widget.time) return 1;
+    }
 
     for(var movesToCheck in possibleWinningMoves) {
 
@@ -98,11 +122,8 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
     // Update game state
     if(gameIsOver(board)) {
-      setState(() {
-        winnerId = getWinner(board);
-      });
+
     } else {
-      switchPlayer();
       if(widget.numOfPlayers == 1 && currentPlayer == 2) {
         makeMove();
       }
@@ -135,38 +156,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
   // Worst Move
   void makeEasyMove() {
-
-    double bestScore = -INFINITY;
-    int bestMove = 0;
-    int numOfMoves = numOfPossibleMoves;
-
-    for(int i = 0; i < board.length; i++) {
-
-      // If the square is open
-      if(board[i] == 0) {
-
-        // Make a move in that square
-        board[i] = 2;
-        numOfMoves -= 1;
-
-        // Get a score for this move
-        double miniMaxScore = getMiniMaxScore(board, 0, true, numOfMoves);
-
-        // Set the best score if the score for this move is higher than the score for the last move
-        if(bestScore < miniMaxScore) {
-          bestScore = miniMaxScore;
-          bestMove = i;
-        }
-
-        // Reset the move
-        board[i] = 0;
-        numOfMoves += 1;
-
-      }
-    }
-
-    this.handlePressed(bestMove);
-
+    this.handlePressed(getWorstMove());
   }
 
   // Random
@@ -181,7 +171,18 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
   // Best Move - Minimax algorithm
   void makeHardMove() {
+    this.handlePressed(getBestMove());
+  }
 
+  int getBestMove() {
+    return getMove(false);
+  }
+
+  int getWorstMove() {
+    return getMove(true);
+  }
+
+  int getMove(isMaxMove) {
     double bestScore = -INFINITY;
     int bestMove = 0;
     int numOfMoves = numOfPossibleMoves;
@@ -196,7 +197,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
         numOfMoves -= 1;
 
         // Get a score for this move
-        double miniMaxScore = getMiniMaxScore(board, 0, false, numOfMoves);
+        double miniMaxScore = getMiniMaxScore(board, 0, isMaxMove, numOfMoves);
 
         // Set the best score if the score for this move is higher than the score for the last move
         if(bestScore < miniMaxScore) {
@@ -211,8 +212,7 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
       }
     }
 
-    this.handlePressed(bestMove);
-
+    return bestMove;
   }
 
   double getMiniMaxScore(board, nodeDepth, isMaxMove, numOfMoves) {
@@ -280,6 +280,8 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
 
   void switchPlayer() {
     setState(() {
+      stopwatch1.stop();
+      stopwatch2.start();
       currentPlayer = currentPlayer == 1 ? 2 : 1;
     });
   }
@@ -289,83 +291,119 @@ class TicTacToeBoardState extends State<TicTacToeBoard> {
       int move = currentPlayer;
       board[index] = move;
     });
+    switchPlayer();
   }
 
   @override
   Widget build(BuildContext context) {
 
-    print(board);
+    print(stopwatch1.elapsed.inSeconds);
+    print(stopwatch2.elapsed.inSeconds);
     bool gameOver = gameIsOver(board);
 
-    return Container(
-      color: Colors.green,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Header
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                if(gameOver) Container(
-                  child: winnerId == 0 ? Text('Cat!') : Text('Winner $winnerId'),
+    return CustomPaint(
+        foregroundPainter: StrikeThrough(),
+        child: Container(
+          padding: EdgeInsets.all(8.0),
+          color: Theme.of(context).canvasColor,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Header
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Container(
+                      child: AnimatedDefaultTextStyle(
+                        child: Text(
+                          '${winnerId == 0 ? 'Stale Mate!' : winnerId == 1 ? 'You Win!' : 'You Lose!'}',
+                          style: TextStyle(color: widget.boardColor)
+                        ),
+                        curve: Curves.easeInCubic,
+                        duration: Duration(
+                          milliseconds: 1000,
+                        ),
+                        style: gameOver
+                          ? TextStyle(fontSize: 50)
+                          : TextStyle(fontSize: 0),
+                      )
+
+                    )
+                  ]
                 )
-              ]
-            )
-          ),
+              ),
 
-          // Board
-          Container(
-            height: MediaQuery.of(context).size.width,
-            child: Column(
-              children: [0, 3, 6].map((startIndex) {
+              // Board
+              Container(
+                height: MediaQuery.of(context).size.width - 8.0,
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.boardColor,
+                      blurRadius: 20.0,
+                      spreadRadius: 2.0,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [0, 3, 6].map((startIndex) {
 
-                return Expanded( child: Row(
+                    return Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: board.sublist(startIndex, startIndex + 3).asMap().map((index, move) {
+
+                            int position = startIndex + index;
+
+                            return MapEntry(index, TicTacToeSquare(
+                              position: position,
+                              move: move,
+                              onPressed: () => {
+                                if(move == 0) this.handlePressed(position)
+                              },
+                              textColor: widget.boardColor,
+                            ));
+
+                          }).values.toList(),
+
+                        )
+                    );
+
+                }).toList(),
+              )
+            ),
+
+            // Footer
+            Expanded(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: board.sublist(startIndex, startIndex + 3).asMap().map((index, move) {
-
-                  return MapEntry(index, TicTacToeSquare(
-                    child: Text('${move == 0 ? '' : move == 1 ? 'x' : 'o'}'),
-                    onPressed: () => {
-                      if(move == 0) this.handlePressed(startIndex + index)
-                    }
-                  ));
-
-                }).values.toList(),
-
-              ));
-
-            }).toList(),
-          )
-        ),
-
-        // Footer
-        Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
+                children: <Widget>[
 
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: <Widget>[
-                      FlatButton(
-                        color: Colors.white,
+
+                      Button(
+                        title: 'Back',
                         onPressed: () => Navigator.pop(context),
-                        child: Text('Back'),
                       ),
-                      FlatButton(
-                        color: Colors.white,
+
+
+                      Button(
+                        title: gameOver ? 'Play Again' : 'Start Over',
                         onPressed: this.resetGame,
-                        child: Text(gameOver ? 'Play Again' : 'Start Over'),
-                      ),
+                      )
+
                     ]
                   ),
 
-              ]
-            )
-        ),
-      ],
-      )
+                ]
+              )
+            ),
+          ],
+          )
+        )
     );
 
   }

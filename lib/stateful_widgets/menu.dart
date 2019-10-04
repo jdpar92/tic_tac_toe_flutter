@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:tic_tac_toe/stateless_widgets/menu_button.dart';
+import 'package:tic_tac_toe/stateless_widgets/button.dart';
 
 import 'account_screen.dart';
 import 'history_screen.dart';

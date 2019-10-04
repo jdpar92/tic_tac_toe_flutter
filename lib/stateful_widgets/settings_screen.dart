@@ -2,8 +2,10 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/material_picker.dart';
 import 'package:tic_tac_toe/constants/settings.dart';
-import 'package:tic_tac_toe/stateless_widgets/menu_button.dart';
+import 'package:tic_tac_toe/stateless_widgets/button.dart';
+import 'package:tic_tac_toe/stateless_widgets/setting_row.dart';
 
 import 'tic_tac_toe_board.dart';
 
@@ -23,7 +25,8 @@ class SettingsScreenState extends State<SettingsScreen> {
     'difficulty': Difficulties.easy,
     'mode': Modes.classic,
     'numOfPlayers': 1,
-    'time': 5,
+    'time': 10.0,
+    'boardColor': Colors.purpleAccent,
 
   };
 
@@ -46,83 +49,112 @@ class SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
 
+    final formatText = (title) => Text(title);
+
     return Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
+
           Expanded(
+            flex: 4,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
 
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text('Players: '),
-                      CupertinoSegmentedControl(
-                        children: {
-                          1: Text('One'),
-                          2: Text('Two'),
-                        },
-                        groupValue: settings['numOfPlayers'],
-                        onValueChanged: handleValueChanged('numOfPlayers'),
-                      ),
-                    ]
+                SettingRow(
+                  settingTitle: 'Players',
+                  options: {
+                    1: formatText('One Player'),
+                    2: formatText('Two Player'),
+                  },
+                  selectedOption: settings['numOfPlayers'],
+                  onValueChanged: handleValueChanged('numOfPlayers')
                 ),
 
-                if(settings['numOfPlayers'] == 1) Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                if(settings['numOfPlayers'] == 1) SettingRow(
+                    settingTitle: 'Difficulty',
+                    options: {
+                      Difficulties.easy: formatText('Easy'),
+                      Difficulties.medium: formatText('Medium'),
+                      Difficulties.hard: formatText('Hard'),
+                    },
+                    selectedOption: settings['difficulty'],
+                    onValueChanged: handleValueChanged('difficulty')
+                ),
+
+                SettingRow(
+                    settingTitle: 'Mode',
+                    options: {
+                      Modes.classic: formatText('Classic'),
+                      Modes.timed: formatText('Timed'),
+                    },
+                    selectedOption: settings['mode'],
+                    onValueChanged: handleValueChanged('mode')
+                ),
+
+                if(settings['mode'] == Modes.timed) Slider(
+                  value: settings['time'],
+                  onChanged: handleValueChanged('time'),
+                  min: 10.0,
+                  max: 20.0,
+                  label: settings['time'].toString(),
+                  activeColor: settings['boardColor']
+                ),
+
+                Row(
                   children: <Widget>[
-                    Text('Difficulty: '),
-                    CupertinoSegmentedControl(
-                      children: {
-                        Difficulties.easy: Text('easy'),
-                        Difficulties.medium: Text('medium'),
-                        Difficulties.hard: Text('hard'),
-                      },
-                      groupValue: settings['difficulty'],
-                      onValueChanged: handleValueChanged('difficulty'),
-                    ),
+                    Button(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: <Widget>[
+                          Expanded(
+                            flex: 1,
+                            child: Text('Board Color'),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              color: settings['boardColor'],
+                            )
+                          )
+                        ]
+                        ),
+                      color: settings['boardColor'],
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              content: SingleChildScrollView(
+                                child: MaterialPicker(
+                                  pickerColor: settings['boardColor'],
+                                  onColorChanged: handleValueChanged('boardColor'),
+                                  enableLabel: true, // only on portrait mode
+                                ),
+                              ),
+                            );
+                          }
+                        );
+                      }
+                    )
                   ]
-                ),
-
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text('Mode: '),
-                      CupertinoSegmentedControl(
-                        children: {
-                          Modes.classic: Text('Classic'),
-                          Modes.timed: Text('Timed'),
-                        },
-                        groupValue: settings['mode'],
-                        onValueChanged: handleValueChanged('mode'),
-                      ),
-                    ]
-                ),
-
-                if(settings['mode'] == Modes.timed) Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text('Seconds: '),
-                      CupertinoSegmentedControl(
-                        children: {
-                          5: Text('Five'),
-                          10: Text('Ten'),
-                        },
-                        groupValue: settings['time'],
-                        onValueChanged: handleValueChanged('time'),
-                      ),
-                    ]
-                ),
+                )
 
               ],
             )
           ),
           Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                MenuButton(title: 'Start', onPressed: startGame),
+
+                  Row (
+                    children: [
+                      Button(title: 'Start Game', onPressed: startGame)
+                    ]
+                  )
+
               ]
             )
           ),
